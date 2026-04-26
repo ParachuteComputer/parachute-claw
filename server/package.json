@@ -2,7 +2,7 @@
   "name": "@openparachute/claw-server",
   "version": "0.0.1",
   "private": true,
-  "description": "Paraclaw server — Bun + SQLite, bridges NanoClaw and Parachute Vault for the web UI.",
+  "description": "Paraclaw orchestration server. Reads claws/* from vault, exposes a REST surface for the UI, manages runtime processes.",
   "license": "AGPL-3.0",
   "type": "module",
   "module": "src/server.ts",

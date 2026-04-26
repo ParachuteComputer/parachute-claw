@@ -1,0 +1,162 @@
+:root {
+  --bg: #faf8f4;
+  --bg-soft: #f3f0ea;
+  --fg: #2c2a26;
+  --fg-muted: #6b6860;
+  --fg-dim: #9a9690;
+  --accent: #4a7c59;
+  --accent-soft: rgba(74, 124, 89, 0.08);
+  --border: #e6e1d8;
+  --border-light: #efeae0;
+  --error: #8c3a3a;
+  --error-soft: rgba(140, 58, 58, 0.06);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button {
+  font: inherit;
+  background: var(--accent);
+  color: white;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+button:hover { background: #3d6849; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+input, textarea, select {
+  font: inherit;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: var(--fg);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+code {
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.85em;
+  background: var(--bg-soft);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 6rem;
+}
+.nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+.nav .brand {
+  font-weight: 600;
+  font-family: serif;
+  font-size: 1.05rem;
+  margin-right: auto;
+}
+.nav a {
+  color: var(--fg-muted);
+  font-size: 0.95rem;
+}
+.nav a.active { color: var(--fg); font-weight: 500; }
+.section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.section h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.muted { color: var(--fg-muted); font-size: 0.92rem; }
+.dim { color: var(--fg-dim); font-size: 0.85rem; }
+.error-banner {
+  background: var(--error-soft);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.status-banner {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+.empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--fg-muted);
+  background: var(--bg-soft);
+  border-radius: 10px;
+}
+.agent-row {
+  display: block;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  background: white;
+  text-decoration: none;
+  color: inherit;
+}
+.agent-row:hover { border-color: var(--accent); }
+.agent-row .name {
+  font-size: 1.05rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.agent-row .meta {
+  margin-top: 0.4rem;
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+}
+.tag {
+  display: inline-block;
+  padding: 0.05em 0.5em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  margin-right: 0.3rem;
+}
+.tag.muted { background: var(--bg-soft); color: var(--fg-muted); }
+.tag.error { background: var(--error-soft); color: var(--error); }
+form .row { margin-bottom: 1rem; }
+form label { display: block; font-size: 0.9rem; color: var(--fg-muted); margin-bottom: 0.3rem; }
+form input[type="text"], form select, form textarea { width: 100%; }
+form textarea { min-height: 8rem; font-family: inherit; }
+.run-row {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.5rem;
+  background: white;
+}
+.run-row .when { font-size: 0.8rem; color: var(--fg-dim); }
+.run-row .summary { margin-top: 0.4rem; font-size: 0.92rem; }
+hr.sep { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }

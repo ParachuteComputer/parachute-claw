@@ -1,0 +1,25 @@
+{
+  "name": "@openparachute/claw-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Paraclaw runtime — the agent loop. Reads claws/<name>, polls inbox, runs Claude Agent SDK, writes runs + outbox.",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "module": "src/cli.ts",
+  "bin": {
+    "paraclaw-runtime": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

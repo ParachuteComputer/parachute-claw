@@ -1,19 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchAgents } from "../lib/server.ts";
-
-interface AgentRow {
-  name: string;
-  scope: string;
-  channels: string[];
-  lastActivityAt?: string;
-  paused: boolean;
-}
+import { fetchAgents, type AgentSummary } from "../lib/server.ts";
 
 export function AgentList() {
   const [state, setState] = useState<
     | { kind: "loading" }
-    | { kind: "ok"; agents: AgentRow[] }
+    | { kind: "ok"; agents: AgentSummary[] }
     | { kind: "error"; message: string }
   >({ kind: "loading" });
 
@@ -21,28 +13,46 @@ export function AgentList() {
     let cancelled = false;
     fetchAgents()
       .then((agents) => !cancelled && setState({ kind: "ok", agents }))
-      .catch((err) =>
-        !cancelled &&
-        setState({ kind: "error", message: err instanceof Error ? err.message : String(err) }),
+      .catch(
+        (err) =>
+          !cancelled &&
+          setState({
+            kind: "error",
+            message: err instanceof Error ? err.message : String(err),
+          }),
       );
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (state.kind === "loading") return <div>Loading agents...</div>;
+  if (state.kind === "loading") {
+    return (
+      <div className="status-banner">Loading agents from your vault…</div>
+    );
+  }
 
   if (state.kind === "error") {
     return (
       <div>
-        <h2>Agents</h2>
-        <p style={{ color: "var(--fg-muted)" }}>
-          Server returned: <code>{state.message}</code>
+        <div className="error-banner">
+          Couldn't reach Paraclaw server: <code>{state.message}</code>
+        </div>
+        <p className="muted">
+          Make sure the server is running:{" "}
+          <code>cd server && bun src/server.ts</code>. It needs{" "}
+          <code>PARACLAW_VAULT_TOKEN</code> set to a vault admin token.
         </p>
-        <p style={{ color: "var(--fg-dim)", fontSize: "0.85rem" }}>
-          Expected today — server's <code>/api/agents</code> is a 501 stub.
-          Real listing wires up in Phase B (see{" "}
-          <code>docs/ui-design.md</code>).
+      </div>
+    );
+  }
+
+  if (state.agents.length === 0) {
+    return (
+      <div className="empty">
+        <p>No claws yet.</p>
+        <p>
+          <Link to="/agents/new">Create your first one →</Link>
         </p>
       </div>
     );
@@ -50,26 +60,36 @@ export function AgentList() {
 
   return (
     <div>
-      <h2>Agents</h2>
-      {state.agents.length === 0 ? (
-        <p style={{ color: "var(--fg-muted)" }}>
-          No agents yet. <Link to="/agents/new">Create one →</Link>
-        </p>
-      ) : (
-        <ul>
-          {state.agents.map((a) => (
-            <li key={a.name}>
-              <Link to={`/agents/${a.name}`}>
-                {a.name}
-              </Link>
-              <span style={{ color: "var(--fg-muted)", marginLeft: "0.5rem" }}>
-                ({a.scope}, {a.channels.join(" / ") || "no channels"})
+      <h2>Your claws ({state.agents.length})</h2>
+      {state.agents.map((a) => (
+        <Link key={a.name} to={`/agents/${a.name}`} className="agent-row">
+          <div className="name">
+            {a.name}
+            {a.paused && <span className="tag muted">paused</span>}
+            {a.inboxPending > 0 && (
+              <span className="tag">
+                {a.inboxPending} pending
               </span>
-              {a.paused && <em> · paused</em>}
-            </li>
-          ))}
-        </ul>
-      )}
+            )}
+            {a.lastRun?.status === "error" && (
+              <span className="tag error">last run errored</span>
+            )}
+          </div>
+          <div className="meta">
+            {a.scopes.length > 0 && (
+              <>scopes: {a.scopes.join(", ")} · </>
+            )}
+            {a.channels.length > 0 ? (
+              <>channels: {a.channels.join(", ")}</>
+            ) : (
+              <>no channels yet</>
+            )}
+            {a.lastRun?.finishedAt && (
+              <> · last active {new Date(a.lastRun.finishedAt).toLocaleString()}</>
+            )}
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

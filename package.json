@@ -2,15 +2,16 @@
   "name": "@openparachute/claw",
   "version": "0.0.1",
   "private": true,
-  "description": "Parachute-native agent framework. NanoClaw skill today, Parachute distribution tomorrow.",
+  "description": "Parachute-native agents on Claude Agent SDK + Parachute Vault.",
   "license": "AGPL-3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/ParachuteComputer/parachute-claw.git"
   },
   "scripts": {
-    "dev:ui": "echo 'ui/ scaffold pending — see docs/ui-design.md'",
-    "dev:server": "echo 'server/ scaffold pending — see docs/architecture.md §Phase B'",
-    "skill:lint": "echo 'skill/ is markdown — no lint needed'"
+    "runtime": "bun runtime/src/cli.ts",
+    "server": "bun server/src/server.ts",
+    "ui": "cd ui && bun run dev",
+    "typecheck": "bun run --cwd runtime typecheck && bun run --cwd server typecheck && bun run --cwd ui typecheck"
   }
 }

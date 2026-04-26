@@ -1,9 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Mount path is /claw/ — matches the parachute-notes pattern (Vite base
-// + BrowserRouter basename + PWA manifest scope all aligned). When Phase B
-// ships, Paraclaw is served at https://<host>/claw/ under the ecosystem hub.
+// Mount path /claw/ — matches parachute-notes.
 export default defineConfig({
   base: "/claw/",
   plugins: [react()],
