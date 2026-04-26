@@ -1,0 +1,20 @@
+{
+  "name": "@openparachute/claw-server",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Paraclaw server — Bun + SQLite, bridges NanoClaw and Parachute Vault for the web UI.",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "module": "src/server.ts",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
