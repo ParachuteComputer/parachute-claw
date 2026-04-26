@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+bun.lock
+package-lock.json
+
+# build output
+dist/
+.cache/
+.parcel-cache/
+_site/
+
+# editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# claude / agent working dirs
+.claude/worktrees/
+
+# logs / runtime
+*.log
+*.pid
