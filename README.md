@@ -1,75 +1,125 @@
 # Parachute Claw
 
-> Parachute-native agents with vault-scoped identity.
+> Parachute-native agents with vault-scoped identity. Claude Agent SDK + Parachute Vault. No fork of anything.
 
-**Today:** a [NanoClaw](https://github.com/qwibitai/nanoclaw) skill that wires a [Parachute Vault](https://github.com/ParachuteComputer/parachute-vault) into your containerized agents over MCP, with a scoped token per agent.
+A claw is an agent. Each claw is a vault note tree at `claws/<name>` — its identity, its inbox, its outbox, its run history. Each claw runs on Claude Agent SDK with a scoped vault token (`vault:read` / `vault:write` / `vault:admin`) as its only credential. Each claw can be edited, queried, paused, or revoked from the Paraclaw web UI — or from any vault client (Claude Code, Notes, your own MCP scripts).
 
-**Tomorrow:** a Parachute distribution of NanoClaw — same container model, same channel adapters, same Claude Agent SDK runtime — plus a web UI for spinning up and managing agents, OAuth-issued vault tokens, and the agent-as-vault-citizen experience that makes "give this agent read-only access to my work vault" a one-click affair.
+Paraclaw is what falls out when you stop reinventing identity, memory, and management for agents — because [Parachute Vault](https://github.com/ParachuteComputer/parachute-vault) already has all three.
 
 ## Status
 
-**Pre-RC, exploratory.** Branch protection is off until first RC. Direct push to `main` is fine while shape is fluid; this README will get updated when we hit the governance gate.
+**Pre-RC, exploratory.** Three real components — `runtime/`, `server/`, `ui/` — all build and typecheck. End-to-end smoke against a real vault works (create agent → see it in UI → send a message → runtime processes it via Claude Agent SDK → response appears as a vault note).
 
-## What problem this solves
+What's missing for first usable release:
 
-[Parachute Vault](https://github.com/ParachuteComputer/parachute-vault) gives you scoped tokens (`vault:read` / `vault:write` / `vault:admin`) and a graph-shaped knowledge layer that any MCP client can consume. [NanoClaw](https://github.com/qwibitai/nanoclaw) gives you a containerized, multi-channel agent runtime that runs on the Claude Agent SDK. Compose them and you get:
+- OAuth handshake from server to vault (today: server holds an admin token via env var)
+- A real channel adapter (today: messages come from the UI's "send a test message" form; Telegram-MCP integration is the next piece)
+- Schedule support (cron entries on `claws/<name>` frontmatter; runtime cron-aware)
+- PWA polish + mobile UX
 
-- **One agent = one container = one scoped vault token.** A "research" agent gets `vault:read` and physically can't write. A "personal-assistant" agent gets `vault:write` and captures notes for you across Telegram / WhatsApp / Discord. A "sysadmin" agent gets `vault:admin` for the few jobs that need it.
-- **No raw API keys in agent contexts.** Auth is scoped; revocation is per-token; `parachute vault tokens revoke` is the kill switch.
-- **The vault is the agent's memory.** Notes the agent writes are notes you read (and vice versa). Every agent's work shows up in your knowledge graph automatically.
+## Three things to know
 
-## Phase A — install today (skill)
+1. **Vault is the substrate.** Every agent's identity, memory, message queue, and run history is in your vault. Uninstall Paraclaw → your agents' state stays in your vault as a graph you can query forever.
+2. **Tokens are the boundary.** A `vault:read` claw physically can't write. A `vault:admin` claw is fully trusted. Revoke via `parachute vault tokens revoke <label>`. There's no other auth layer.
+3. **Claude Agent SDK does the LLM-tool-loop.** We don't reimplement the agent loop. We compose `[query()](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)` with the vault MCP and let the SDK do its work.
 
-Requires a working [NanoClaw](https://github.com/qwibitai/nanoclaw) and a running [Parachute Vault](https://github.com/ParachuteComputer/parachute-vault).
+## Quick start
+
+Pre-reqs: Bun ≥ 1.3, a running [Parachute Vault](https://github.com/ParachuteComputer/parachute-vault) on `127.0.0.1:1940`, the [`parachute` CLI](https://github.com/ParachuteComputer/parachute-cli) on PATH.
 
 ```sh
-# Inside your NanoClaw fork, with Claude Code:
-/add-parachute
+# 1. Mint a vault admin token for the Paraclaw server.
+parachute vault tokens create --scope vault:admin --label paraclaw-server
+# → t_... (save this)
+
+# 2. Boot the server.
+cd server
+bun install
+PARACLAW_VAULT_TOKEN=t_... bun src/server.ts &
+# → paraclaw-server listening on http://127.0.0.1:1944
+
+# 3. Boot the UI dev server.
+cd ../ui
+bun install
+bun run dev
+# → http://localhost:5173/claw/
+
+# 4. Open the UI, create your first claw via the wizard.
+# 5. Boot a runtime for it (in a third terminal).
+cd ../runtime
+bun install
+PARACLAW_VAULT_TOKEN=t_... bun src/cli.ts run <claw-name>
+# → runtime listens on the inbox; processes whatever lands
+
+# 6. From the agent's detail page in the UI, send a test message.
+# Watch the runtime log; the response appears in vault as
+# claws/<claw-name>/runs/<run-id> and (if the agent produced one)
+# claws/<claw-name>/outbox/<ts>-ui.
 ```
 
-The skill prompts for:
-- Vault URL (default `http://127.0.0.1:1940/vault/default`)
-- Scope (`vault:read` / `vault:write` / `vault:admin`)
-- Whether to mint a fresh scoped token via `parachute vault tokens create`, or paste an existing one
+## Architecture
 
-It then writes the MCP server entry into your agent group's config and, optionally, syncs the agent's `CLAUDE.md` into a vault note so the agent can read its own configuration as part of its memory.
+`docs/architecture.md` is the canonical reference. The short version:
 
-See [`docs/phase-a-skill.md`](./docs/phase-a-skill.md) for the full installer reference and the manual setup path if you'd rather wire it by hand.
+```
+  Channels (MCP servers — composed, not built)
+                │
+                ↓
+     vault notes at claws/<name>/inbox/
+                │
+                ↓
+        Paraclaw Runtime
+   (reads identity, polls inbox,
+    runs Claude Agent SDK with
+    vault MCP wired, writes
+    outbox + runs)
+                │
+                ↓
+     vault notes at claws/<name>/outbox/  →  Channels deliver
+                              ↑
+                              │
+              Paraclaw Server  ──→  Paraclaw UI
+              (REST over vault,    (Vite/React PWA)
+               mints tokens)
+```
 
-## Phase B — coming next (the distribution)
+The runtime, server, and UI are all small. The interesting things (LLM reasoning, tool execution, vault storage, OAuth) happen elsewhere; we orchestrate.
 
-A Parachute-flavored distribution of NanoClaw with:
+## Why not a NanoClaw fork?
 
-- **Web UI for agent management.** List your agents. See which channels each is on. Spin up a new agent in one click. Issue / revoke vault tokens. Watch recent message traffic. Reschedule scheduled jobs. NanoClaw upstream's stance is "no dashboards, talk to Claude Code"; that's a defensible philosophy for power users but not for the "I just want my work agent" path.
-- **OAuth handoff.** Log into Paraclaw via your Parachute Vault's OAuth flow. Paraclaw issues per-agent vault tokens automatically. No paste-token workflow.
-- **Vault-as-registry.** Every agent has a vault note that *is* its identity — its name, its scopes, its channels, its `CLAUDE.md`. Edit the note, the agent updates. The agent sees its own note as part of its context.
-- **Inherits NanoClaw's core.** Containers per agent group, channel adapters, scheduled jobs, message-queue I/O via SQLite — all stays.
+[NanoClaw](https://github.com/qwibitai/nanoclaw) is a coherent framework for its worldview ("no dashboards, talk to Claude Code; OneCLI Agent Vault for credentials; SQLite-per-session message queues"). Each of those choices duplicates something Parachute already does better:
 
-See [`docs/architecture.md`](./docs/architecture.md) for the full Phase A → B → C trajectory and [`docs/phase-b-vision.md`](./docs/phase-b-vision.md) for the Phase B design space.
+- We have OAuth-issued scoped tokens, not OneCLI Agent Vault.
+- We have a graph-shaped memory layer (vault notes), not per-session SQLite queues.
+- We have a web UI as a first-class management surface, not "talk to Claude Code."
 
-## Phase C — the long arc
+A fork inherits NanoClaw's choices and either lives with the duplication or fights upstream forever. Building Paraclaw directly on Claude Agent SDK + vault expresses the design we actually want, with a smaller maintenance surface.
 
-The Parachute ecosystem already has the primitive nobody else has: **scoped vault tokens that are agent identity**. Phase C is what becomes possible when that primitive is everywhere:
+The cost: NanoClaw's existing channel adapters don't come for free. The mitigation: most channels already have MCP servers (Telegram, Discord, Email, etc.). "Wrap an MCP server into a vault inbox bridge" is much smaller scope than "implement a Telegram client from scratch."
 
-- Agent-to-agent messaging where each agent's actions are recorded in its own vault note, so the conversation between agents *is* a graph the user can traverse later.
-- Multi-vault agents that hold tokens for several scopes simultaneously and reason about which vault to read/write per request.
-- Cross-agent delegation: a planning agent that can issue narrower-scoped sub-tokens to executor agents for the duration of a task.
+See `docs/architecture.md` for the full reasoning.
 
-These aren't shipping anytime soon. They're the reason the foundation is worth building well.
+## Phase trajectory
 
-## Non-goals (today)
+- **Phase A (today):** runtime + server + UI all real. CLI-source inbox via the UI's send form. Read agents, view runs, create new claws via wizard.
+- **Phase B (next):** OAuth handshake (server registers as vault OAuth client; user approves once); first real channel adapter (Telegram-MCP); schedules (cron entries in `claws/<name>` frontmatter; runtime cron-aware); per-agent scoped token minted on creation (today the server uses its own admin token).
+- **Phase C (long arc):** multi-vault claws (depends on per-vault-name scopes shipping in vault); cross-claw delegation (planning agent issues sub-tokens to executor claws); recipe sharing (claws notes are portable; share with another Parachute user → instantiate against their vault).
 
-- We are not forking NanoClaw's core. We're a skill that composes with it cleanly. If NanoClaw upstream evolves, our skill follows.
-- We are not building a multi-tenant SaaS. Single-user / single-laptop / single-tailnet is the primary target. Multi-user comes after Parachute Cloud lands.
-- We are not implementing our own LLM-tool-loop. NanoClaw delegates to Claude Agent SDK; we inherit that and add Parachute identity on top.
+## Layout
+
+```
+parachute-claw/
+├── README.md                  ← you are here
+├── CLAUDE.md                  ← per-repo conventions
+├── docs/
+│   ├── architecture.md        ← canonical design doc
+│   ├── phase-b-vision.md      ← deep design space exploration
+│   └── ui-design.md           ← three-screen UI layout
+├── runtime/                   ← the agent loop (Bun + Claude Agent SDK)
+├── server/                    ← REST orchestration over vault (Bun)
+└── ui/                        ← management UI (Vite/React/TS)
+```
 
 ## License
 
 [AGPL-3.0](./LICENSE), matching the rest of the Parachute ecosystem.
-
-## Cross-references
-
-- [`parachute-vault`](https://github.com/ParachuteComputer/parachute-vault) — the knowledge graph that gives Paraclaw its identity primitives.
-- [`parachute-cli`](https://github.com/ParachuteComputer/parachute-cli) — the coordinator that mints scoped tokens (`parachute vault tokens create --scope vault:read`).
-- [`parachute-patterns`](https://github.com/ParachuteComputer/parachute-patterns) — cross-cutting conventions; Paraclaw conforms to module-protocol, oauth-scopes, canonical-ports, governance.
-- [NanoClaw](https://github.com/qwibitai/nanoclaw) — upstream framework Phase A composes with.
