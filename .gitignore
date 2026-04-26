@@ -26,3 +26,6 @@ _site/
 # logs / runtime
 *.log
 *.pid
+
+# typescript build artifacts
+*.tsbuildinfo
